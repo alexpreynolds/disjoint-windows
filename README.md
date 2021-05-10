@@ -44,7 +44,7 @@ The locally optimal path contains elements which do not overlap. If we have more
 
 The `walkers` and `priority_queue` elements prioritize getting high-scoring elements over getting more elements across the genomic space. 
 
-These "greedy" methods stop return elements around 50k elements, and so do not meet the 100k criterion. In the case of Walker's, it is likely that sampling with replacement will bias samples towards picking the same high-scoring elements, which will always get rejected after the first insertion. The heap method, on the other hand,does not sample randomly, but picks the best elements first. These high-value intervals tend to clump together. Those that are subsequently popped will be likely get rejected, being very close to best elements that have been inserted.
+These "greedy" methods stop returning elements around 50k elements, and so do not meet the 100k criterion. In the case of Walker's, it is likely that sampling with replacement will bias samples towards picking the same high-scoring elements, which will always get rejected after the first insertion. The heap method, on the other hand,does not sample randomly, but picks the best elements first. These high-value intervals tend to clump together. Those that are subsequently popped will be likely get rejected, being very close to best elements that have been inserted.
 
 ### Good news
 
