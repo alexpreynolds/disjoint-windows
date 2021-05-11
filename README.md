@@ -30,7 +30,11 @@ We repeat sampling until we get 100k elements, or until we hit some iteration li
 
 In the `priority_queue` target, we put elements into a priority queue, ordered by score. We pop the highest-scoring element off the queue, keep it if it does not overlap any other popped elements, and reject it if it does. 
 
-We repeat this until the queue is empty, or until we get 100k elements.
+We repeat this until the queue is empty, or until we get 100k elements. 
+
+### `priority_queue_with_jitter` 
+
+This target use the same method as `priority_queue` but adds noise to the weights, before constructing the heap. The idea is to get more separation between entries in the heap.
 
 ### `wis_via_iteration`
 
@@ -40,23 +44,9 @@ The locally optimal path contains elements which do not overlap. If we have more
 
 ## Results
 
-### Bad news
+### Baseline
 
-The `walkers` and `priority_queue` elements prioritize getting high-scoring elements over getting more elements across the genomic space. 
-
-These "greedy" methods stop returning elements around 49k elements, and so do not meet the 100k-element criterion.
-
-In the case of Walker's, it is likely that sampling-with-replacement will bias samples towards picking the same high-scoring elements, which will always get rejected, having either already been inserted, or being near an existing insertion.
-
-The max-heap method, on the other hand, does not sample randomly, but picks the best elements first. These high-value intervals tend to clump together. Those that are subsequently popped after the first high-scoring intervals are likely to be rejected, being sufficiently close to elements that have already been inserted. This will quickly exhaust the queue of intervals to test.
-
-### Good news
-
-The weighted-interval scheduling approach of `wis_via_iteration` generates ~104k non-overlapping elements over our test input, and so we are able to return 100k high-scoring, non-overlapping intervals.
-
-We can use the `wis_via_iteration_summaries` target to compare the baseline signal distribution in the original windows against the distribution in our 104k- and 100k-window subsets.
-
-Here is the observed baseline:
+Here is a summary of the baseline score distribution:
 
 ```
 $ cut -f4 ../data/windows.fixed.25k.bed | Rscript -e 'summary (as.numeric (readLines ("stdin")))'
@@ -64,7 +54,23 @@ $ cut -f4 ../data/windows.fixed.25k.bed | Rscript -e 'summary (as.numeric (readL
 0.05247 0.30294 0.36386 0.92198 0.73372 9.92041 
 ```
 
-We would expect (and we observe) that the ~104k `wis_via_iteration` subset (no `k` specified) has a better signal profile, as we are picking a locally optimal set of high-score intervals:
+We expect that approaches we use should give better overall attributes, except for the maximum. We also expect that the approaches used return at least some elements that have this maximum score.
+
+### `walkers`
+
+Our Walker's Alias approach retrieves about 2.8% of input elements, before it retrieves the same high-scoring elements and must quit early. This amounts to ~86k of the 100k element subset we require, so we do not compare this method here.
+
+### `priority_queue`
+
+The max-heap approach returns 94972 of the requested 100k elements (95%). The heap gets exhausted faster than we can retrieve the elements we want. This may be due to high-scoring elements being close to one another, such that they are popped off the top of the heap and rejected too quickly. 
+
+A `priority_queue_with_jitter` target adds noise to the weights, to try to get more separation before constructing the heap. This performed worse (92067 elements returned).
+
+### `wis_via_iteration`
+
+The weighted-interval scheduling approach of `wis_via_iteration` generates ~104k non-overlapping elements over our test input, and so we are able to return 100k high-scoring, non-overlapping intervals. We can use the `wis_via_iteration_summaries` target to compare the baseline signal distribution in the original windows against the distribution in our 104k- and 100k-window subsets.
+
+We observe that the ~104k `wis_via_iteration` subset (no `k` specified) has a better signal profile, as we are picking a locally optimal set of high-score intervals:
 
 ```
 $ cut -f4 ../results/output.wis_via_iteration.all.bed | Rscript -e 'summary (as.numeric (readLines ("stdin")))'

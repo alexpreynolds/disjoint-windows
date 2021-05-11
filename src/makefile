@@ -9,6 +9,7 @@ LEFT_WINDOW_WIDTH=12000
 RIGHT_WINDOW_WIDTH=12000
 WINDOW_WIDTH=25000
 WINDOW_STEP=1000
+SAMPLES=100000
 
 all: extend_windows
 
@@ -17,7 +18,7 @@ extend_windows:
 
 wis_via_iteration:
 	${PWD}/weighted_interval_scheduling_via_iteration.py --input=${INPUT_FN} | sort-bed - > ${RESULTS}/output.wis_via_iteration.all.bed
-	${PWD}/weighted_interval_scheduling_via_iteration.py --input=${INPUT_FN} --k=100000 | sort-bed - > ${RESULTS}/output.wis_via_iteration.100k.bed
+	${PWD}/weighted_interval_scheduling_via_iteration.py --input=${INPUT_FN} --k=${SAMPLES} | sort-bed - > ${RESULTS}/output.wis_via_iteration.100k.bed
 
 wis_via_iteration_summaries:
 	cut -f4 ${INPUT_FN} | Rscript -e 'summary (as.numeric (readLines ("stdin")))'
@@ -25,10 +26,13 @@ wis_via_iteration_summaries:
 	cut -f4 ${RESULTS}/output.wis_via_iteration.100k.bed | Rscript -e 'summary (as.numeric (readLines ("stdin")))'
 
 priority_queue:
-	${PWD}/max_heap.py --input=${INPUT_FN} --k=100
+	${PWD}/max_heap.py --input=${INPUT_FN} --k=${SAMPLES} | sort-bed - > ${RESULTS}/output.max_heap.100k.bed
+
+priority_queue_with_jitter:
+	${PWD}/max_heap_with_jitter.py --input=${INPUT_FN} --k=${SAMPLES} | sort-bed - > ${RESULTS}/output.max_heap_with_jitter.100k.bed
 
 walkers:
-	${PWD}/walkers.py --input=${INPUT_FN} --k=100
+	${PWD}/walkers.py --input=${INPUT_FN} --k=${SAMPLES} | sort-bed - > ${RESULTS}/output.walkers.100k.bed
 
 #
 # test Walker's Alias method

@@ -86,6 +86,8 @@ high-score elements.
 import pandas as pd
 import numpy as np
 import random
+from io import StringIO
+import sys
 import click
 
 def construct_walkers_alias_table(keys, weights):
@@ -128,7 +130,7 @@ def sample_key(num_keys):
 @click.command()
 @click.option('--input', help='input filename')
 @click.option('--k', type=int, help='samples')
-@click.option('--window-span', type=int, default=23, help='number of windows used for overlap/rejection testing')
+@click.option('--window-span', type=int, default=24, help='number of windows used for overlap/rejection testing')
 @click.option('--max-attempts', type=int, default=100000, help='number of rejections before quitting early')
 def main(input, k, window_span, max_attempts):
   global keys
@@ -166,9 +168,9 @@ def main(input, k, window_span, max_attempts):
       
       If any values are True, we |continue| the loop. 
       
-      If all are False, we set these same values all True, add
-      add the key to |qualifying_keys|, decrement |num_samples|
-      and |break| to look for the next qualifying sample.
+      If all are False, we the key to True, add the key to 
+      |qualifying_keys|, decrement |num_samples| and |break| 
+      to look for the next qualifying sample.
       '''
       if key not in qualifying_keys:
         start_index = key - window_span if key - window_span > 0 else 0
@@ -178,14 +180,16 @@ def main(input, k, window_span, max_attempts):
           max_attempts -= 1
           continue
         else:
-          rejection_v[start_index:stop_index] = True
+          rejection_v[key] = True
           qualifying_keys.append(key)
           num_samples -= 1
           break
   # Sort the keys into numerical order to retrieve dataframe rows by index
   qualifying_keys.sort()
   # Write out sample for inspection (could instead drop this to a Pandas dataframe)
-  print(df.iloc[qualifying_keys])
+  o = StringIO()
+  df.iloc[qualifying_keys].to_csv(o, sep='\t', index=False, header=False)
+  sys.stdout.write('{}'.format(o.getvalue()))
   
 
 if __name__ == '__main__':

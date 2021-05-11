@@ -10,18 +10,22 @@ import sys
 import heapq
 import pandas as pd
 import numpy as np
+from io import StringIO
 import click
 
 
 @click.command()
 @click.option('--input', help='input filename')
 @click.option('--k', type=int, help='samples')
-@click.option('--window-span', type=int, default=23, help='number of windows used for overlap/rejection testing')
+@click.option('--window-span', type=int, default=24, help='number of windows used for overlap/rejection testing')
 def main(input, k, window_span):
     df = pd.read_csv(input, sep='\t', header=None, names=['Chromosome', 'Start', 'End', 'Score'])
     n = len(df.index)
     r = np.zeros(n, dtype=np.bool)
     w = df.loc[:, 'Score'].copy().values
+    '''
+    Use the score distribution to add noise, before constructing the heap
+    '''
     j = np.random.normal(np.mean(w), np.std(w), w.size)
     w += j
     h = []
@@ -41,11 +45,11 @@ def main(input, k, window_span):
     while k > 0:
         try:
             (v, i) = heapq.heappop(h)
-            start_i = i - window_span if i - window_span > 0 else 0
-            stop_i = i + window_span if i + window_span <= n else n
+            start_i = (i - window_span) if (i - window_span) > 0 else 0
+            stop_i = (i + window_span + 1) if (i + window_span + 1) <= n else n
             # sys.stderr.write('k {} | testing key {} | bounds [{}:{}] -> {}'.format(k, i, start_i, stop_i, np.any(r[start_i:stop_i])))
             if not np.any(r[start_i:stop_i]):
-                r[start_i:stop_i] = True
+                r[i] = True
                 q.append(i)
                 k -= 1
         except IndexError:
@@ -55,7 +59,9 @@ def main(input, k, window_span):
     Sort indices and print.
     '''
     q.sort()
-    sys.stdout.write(df.iloc[q].to_string())
+    o = StringIO()
+    df.iloc[q].to_csv(o, sep='\t', index=False, header=False)
+    sys.stdout.write('{}'.format(o.getvalue()))
 
 if __name__ == '__main__':
   main()
