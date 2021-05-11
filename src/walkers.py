@@ -129,7 +129,7 @@ def sample_key(num_keys):
 @click.option('--input', help='input filename')
 @click.option('--k', type=int, help='samples')
 @click.option('--window-span', type=int, default=23, help='number of windows used for overlap/rejection testing')
-@click.option('--max-attempts', type=int, default=1000000, help='number of rejections before quitting early')
+@click.option('--max-attempts', type=int, default=100000, help='number of rejections before quitting early')
 def main(input, k, window_span, max_attempts):
   global keys
   global num_keys
@@ -173,7 +173,7 @@ def main(input, k, window_span, max_attempts):
       if key not in qualifying_keys:
         start_index = key - window_span if key - window_span > 0 else 0
         stop_index = key + window_span if key + window_span <= num_keys else num_keys
-        print('testing key {} bounds [{}:{}] -> {}'.format(key, start_index, stop_index, np.any(rejection_v[start_index:stop_index])))
+        # print('testing key {} bounds [{}:{}] -> {}'.format(key, start_index, stop_index, np.any(rejection_v[start_index:stop_index])))
         if np.any(rejection_v[start_index:stop_index]):
           max_attempts -= 1
           continue

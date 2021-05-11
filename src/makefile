@@ -3,22 +3,32 @@ SHELL=/bin/bash
 DATA=${PWD}/../data
 RESULTS=${PWD}/../results
 
+INPUT_FN=${DATA}/windows.fixed.25k.bed
+
+LEFT_WINDOW_WIDTH=12000
+RIGHT_WINDOW_WIDTH=12000
 WINDOW_WIDTH=25000
 WINDOW_STEP=1000
 
-all: max_windows
+all: extend_windows
 
-max_windows:
-	${PWD}/max_windows.sh ${WINDOW_WIDTH} ${WINDOW_STEP} ${DATA}/removeOverlap.bed ${DATA}/windows.max.25k.bed
+extend_windows:
+	${PWD}/extend_windows.sh ${LEFT_WINDOW_WIDTH} ${RIGHT_WINDOW_WIDTH} ${WINDOW_WIDTH} ${DATA}/removeOverlap.bed.starch ${INPUT_FN}
 
 wis_via_iteration:
-	${PWD}/weighted_interval_scheduling_via_iteration.py --input=${DATA}/windows.max.25k.bed --k=100000 | sort-bed - > ${RESULTS}/output.wis_via_iteration.bed
+	${PWD}/weighted_interval_scheduling_via_iteration.py --input=${INPUT_FN} | sort-bed - > ${RESULTS}/output.wis_via_iteration.all.bed
+	${PWD}/weighted_interval_scheduling_via_iteration.py --input=${INPUT_FN} --k=100000 | sort-bed - > ${RESULTS}/output.wis_via_iteration.100k.bed
+
+wis_via_iteration_summaries:
+	cut -f4 ${INPUT_FN} | Rscript -e 'summary (as.numeric (readLines ("stdin")))'
+	cut -f4 ${RESULTS}/output.wis_via_iteration.all.bed | Rscript -e 'summary (as.numeric (readLines ("stdin")))'
+	cut -f4 ${RESULTS}/output.wis_via_iteration.100k.bed | Rscript -e 'summary (as.numeric (readLines ("stdin")))'
 
 priority_queue:
-	${PWD}/max_heap.py --input=${DATA}/windows.max.25k.bed --k=100
+	${PWD}/max_heap.py --input=${INPUT_FN} --k=100
 
 walkers:
-	${PWD}/walkers.py --input=${DATA}/windows.max.25k.bed --k=100
+	${PWD}/walkers.py --input=${INPUT_FN} --k=100
 
 #
 # test Walker's Alias method

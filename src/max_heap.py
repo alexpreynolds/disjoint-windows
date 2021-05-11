@@ -65,8 +65,8 @@ import sys
 import heapq
 import pandas as pd
 import numpy as np
+from io import StringIO
 import click
-
 
 @click.command()
 @click.option('--input', help='input filename')
@@ -108,7 +108,9 @@ def main(input, k, window_span):
     Sort indices and print.
     '''
     q.sort()
-    sys.stdout.write(df.iloc[q].to_string(index=False, header=False, sep='\t'))
+    o = StringIO()
+    df.iloc[q].to_csv(o, sep='\t', index=False, header=False)
+    sys.stdout.write('{}'.format(o.getvalue()))
 
 if __name__ == '__main__':
   main()

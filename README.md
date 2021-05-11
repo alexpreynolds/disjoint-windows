@@ -12,13 +12,13 @@ We have the following goals:
 
 Review targets in `src/makefile` for more concrete run instructions.
 
-### `max_windows`
+### `extend_windows`
 
 We start with 1kb windows spanning the genome. Each window has a score.
 
-The `max_windows` target creates 25kb windows, which step across the genome in 1kb units. Each interval contains the maximum score over the 25kb span. There are ~3M such elements.
+The `extend_windows` target creates 25kb windows, which step across the genome in 1kb units. Each interval contains a score for that 25kb span, centered on the middle-1k window. There are ~3M such elements.
 
-These windows are contained in `data/windows.max.25k.bed`.
+These windows are contained in `data/windows.fixed.25k.bed`. This file is used as input for other targets.
 
 ### `walkers`
 
@@ -44,32 +44,38 @@ The locally optimal path contains elements which do not overlap. If we have more
 
 The `walkers` and `priority_queue` elements prioritize getting high-scoring elements over getting more elements across the genomic space. 
 
-These "greedy" methods stop returning elements around 50k elements, and so do not meet the 100k criterion. In the case of Walker's, it is likely that sampling with replacement will bias samples towards picking the same high-scoring elements, which will always get rejected either already being inserted, or being near an existing insertion. The max-heap method, on the other hand, does not sample randomly but picks the best elements first. These high-value intervals tend to clump together. Those that are subsequently popped will be likely get rejected, being close enought to best elements that have been inserted. This exhausts the queue of intervals to test.
+These "greedy" methods stop returning elements around 49k elements, and so do not meet the 100k-element criterion.
+
+In the case of Walker's, it is likely that sampling-with-replacement will bias samples towards picking the same high-scoring elements, which will always get rejected, having either already been inserted, or being near an existing insertion.
+
+The max-heap method, on the other hand, does not sample randomly, but picks the best elements first. These high-value intervals tend to clump together. Those that are subsequently popped after the first high-scoring intervals are likely to be rejected, being sufficiently close to elements that have already been inserted. This will quickly exhaust the queue of intervals to test.
 
 ### Good news
 
-The weighted-interval scheduling approach of `wis_via_iteration` generates ~112k non-overlapping elements over our test input, and so we are able to return 100k non-overlapping intervals.
+The weighted-interval scheduling approach of `wis_via_iteration` generates ~104k non-overlapping elements over our test input, and so we are able to return 100k high-scoring, non-overlapping intervals.
 
-We can look at the signal distribution in the original windows:
+We can use the `wis_via_iteration_summaries` target to compare the baseline signal distribution in the original windows against the distribution in our 104k- and 100k-window subsets.
+
+Here is the observed baseline:
 
 ```
-$ cut -f4 ../data/windows.max.25k.bed | Rscript -e 'summary (as.numeric (readLines ("stdin")))'
+$ cut -f4 ../data/windows.fixed.25k.bed | Rscript -e 'summary (as.numeric (readLines ("stdin")))'
    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
- 0.1354  0.4100  1.1727  2.3122  3.7394  9.9204 
+0.05247 0.30294 0.36386 0.92198 0.73372 9.92041 
 ```
 
-We would expect (and we observe) that the ~112k `wis_via_iteration` subset has a better signal profile, as we are picking high-score intervals:
+We would expect (and we observe) that the ~104k `wis_via_iteration` subset (no `k` specified) has a better signal profile, as we are picking a locally optimal set of high-score intervals:
 
 ```
-$ cut -f4 ../results/output.all.bed | Rscript -e 'summary (as.numeric (readLines ("stdin")))'
+$ cut -f4 ../results/output.wis_via_iteration.all.bed | Rscript -e 'summary (as.numeric (readLines ("stdin")))'
    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
- 0.1673  0.5035  2.0201  2.8866  4.8378  9.9204 
+0.09265 0.38719 0.92402 2.17034 3.50988 9.92041 
 ```
 
-As expected, the use of a priority queue to filter these down to 100k elements returns a better overall signal:
+As expected, the use of a priority queue to filter these 104k elements down to a 100k subset returns a better overall signal distribution:
 
 ```
-$ cut -f4 ../results/output.bed | Rscript -e 'summary (as.numeric (readLines ("stdin")))'
+$ cut -f4 ../results/output.wis_via_iteration.100k.bed | Rscript -e 'summary (as.numeric (readLines ("stdin")))'
    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
- 0.4046  0.8628  2.6131  3.2338  5.2530  9.9204 
+ 0.2884  0.4100  1.0608  2.2542  3.6608  9.9204 
 ```
