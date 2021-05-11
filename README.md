@@ -34,7 +34,7 @@ We repeat this until the queue is empty, or until we get 100k elements.
 
 ### `priority_queue_with_jitter` 
 
-This target use the same method as `priority_queue` but adds noise to the weights, before constructing the heap. The idea is to get more separation between entries in the heap.
+This target uses the same method as `priority_queue` but adds noise to the weights, before constructing the heap. The idea is to get more separation between entries in the heap.
 
 ### `wis_via_iteration`
 
