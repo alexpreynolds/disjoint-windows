@@ -7,14 +7,19 @@ INPUT_FN=${DATA}/windows.fixed.25k.bed
 
 LEFT_WINDOW_WIDTH=12000
 RIGHT_WINDOW_WIDTH=12000
+EXTEND_WIDTH=12000
 WINDOW_WIDTH=25000
-WINDOW_STEP=1000
+INTERVAL_STEP=1000
 SAMPLES=100000
 
 all: extend_windows
 
 extend_windows:
 	${PWD}/extend_windows.sh ${LEFT_WINDOW_WIDTH} ${RIGHT_WINDOW_WIDTH} ${WINDOW_WIDTH} ${DATA}/removeOverlap.bed.starch ${INPUT_FN}
+
+recommender:
+	unstarch ${DATA}/removeOverlap.bed.starch > ${DATA}/removeOverlap.bed
+	${PWD}/recommender_subset.py --input=${DATA}/removeOverlap.bed --k=${SAMPLES} --extend=${EXTEND_WIDTH} --window-size=${INTERVAL_STEP}
 
 wis_via_iteration:
 	${PWD}/weighted_interval_scheduling_via_iteration.py --input=${INPUT_FN} | sort-bed - > ${RESULTS}/output.wis_via_iteration.all.bed
