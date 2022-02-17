@@ -102,6 +102,7 @@ def main(input, k):
     for j in range(n):
         i = bisect.bisect_right(e, s[j]) - 1
         p.append(i)
+
     '''
     Set up initial opt(imum) table values.
     '''
